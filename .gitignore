@@ -1,1 +1,13 @@
-/upload/
+*/__pycache__/*
+*/migrations/*
+**/migrations/**
+**/migrations/
+**/**/migrations
+**/migrations/*
+*.pyc
+*.db.sqlite3
+*/uploads/*
+**/uploads/**
+**/uploads/
+**/**/uploads
+**/uploads/*
