@@ -6,6 +6,6 @@ class UploadFileForm(forms.ModelForm):
         model = UploadedFile
         fields = ['file', 'file2']
         labels = {
-                    'file': 'Upload Arrival File',  
-                    'file2': 'Upload Vendor File'  
+                    'file': 'Upload Source File',  
+                    'file2': 'File for Comparison'  
                 }

@@ -260,10 +260,15 @@ def success(request):
     Table Display Page
     """
     try:
-        data = ProcessedData.objects.all().order_by(
+        MatchedData = ProcessedData.objects.filter(is_matched=True).all().order_by(
             '-is_matched')  # Fetch data from the database
-        # print(data)
-        return render(request, 'file_handler/success.html', {'data': data})
+        TotalMatched = ProcessedData.objects.filter(is_matched=True).all().count()
+        UnmatchedData = ProcessedData.objects.filter(is_matched=False).all().order_by(
+            '-is_matched')  # Fetch data from the database
+        TotalUnmatched = ProcessedData.objects.filter(is_matched=False).all().count()
+        SumCommission = list(ProcessedData.objects.filter(is_matched=True).values('commission'))
+        total_commission = sum(item['commission'] for item in SumCommission)
+        return render(request, 'file_handler/success.html', {'data': MatchedData, 'unmatched_data': UnmatchedData,'m_total':TotalMatched,'um_total':TotalUnmatched, 'total_commission':total_commission})
     except Exception as e:
         return HttpResponse(f"An error occurred: {str(e)}")
 

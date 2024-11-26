@@ -30,7 +30,7 @@
             padding-top: 12px;
             padding-bottom: 12px;
             text-align: left;
-            background-color: #04AA6D;
+            background-color: #28a745;
             color: white;
         }
     </style>
@@ -42,45 +42,144 @@
 </head>
 
 <body>
+
     <div class="mt-3">
-        {% if data %}
         <div class="row">
-            <div class="col-md-10">
-                <h2>Processed Data</h2>
+            <div class="col-md-5" style="margin-left: 1%;">
+                <label class="btn btn-success" id="matched_label"
+                    style="font-size: 15px; font-weight: bold; cursor: pointer;">Matched Cases</label>
+                <label class="btn btn-outline-success" id="unmatched_label"
+                    style="font-size: 15px; font-weight: bold; margin-left: 1%; cursor: pointer;">Mismatched
+                    Cases</label>
             </div>
-            <div class="col-md-1" style="margin-left: 8%;">
-                <a href="/" class="btn btn-outline-danger">Back</a>
+
+            <div class="col-md-5" id="Matched_Div">
+                <div class="row">
+                    <div class="col-md-5" id="psc_filter">
+                        <button class="btnGet btn btn-primary" type="button" value="">
+                            Total Matched: {{m_total}}
+                        </button>
+                    </div>
+                    <div class="col-md-7" id="sac_filter">
+                        <button class="btnGet btn btn-primary" type="button" value="">
+                            Total Commission: Rs.{{total_commission}}/-
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-5" style="display: none;" id="Un_Matched_Div">
+                <div class="row">
+                    <div class="col-md-4" id="sac_filter">
+                        <button class="btnGet btn btn-primary" type="button" value="">
+                            Not Matched: {{um_total}}
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-1" style="padding-left: 9%;">
+                <a href="/" class="btn btn-danger">Back</a>
             </div>
         </div>
+
         <div class="col-md-12">
-        <table id="customers" style="border:1px solid black;">
-            <tr>
-                <th>Guest Name</th>
-                <th>Commission</th>
-                <th>Rate AMT</th>
-                <th>Percentage(10%)</th>
-            </tr>
-            {% for row in data %}
-
-            {% if row.is_matched %}
-            <tr>
-                <td>{{ row.guest_name }}</td>
-                <td>{{ row.commission }}</td>
-                <td>{{ row.rate_amd }}</td>
-                <td>{{ row.difference }}</td>
-            </tr>
-            {% else %}
-            <tr>
-                <td>{{ row.guest_name }}</td>
-                <td colspan="3">Match Not Found</td>
-            </tr>
-            {% endif %}
-
-            {% endfor %}
-        </table>
-        {% endif %}
+            <div id="MatchedTable">
+                {% if data %}
+                <table id="customers" style="border:1px solid black;">
+                    <tr>
+                        <th>Guest Name</th>
+                        <th>Commission</th>
+                        <th>Rate AMT</th>
+                        <th>Percentage(10%)</th>
+                    </tr>
+                    {% for row in data %}
+                    {% if row.is_matched %}
+                    <tr>
+                        <td>{{ row.guest_name }}</td>
+                        <td>Rs.{{ row.commission }}</td>
+                        <td>Rs.{{ row.rate_amd }}</td>
+                        <td>Rs.{{ row.difference }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td>{{ row.guest_name }}</td>
+                        <td colspan="3">Match Not Found</td>
+                    </tr>
+                    {% endif %}
+                    {% endfor %}
+                </table>
+                {% endif %}
+            </div>
+            <div style="display: none;" id="Un-MatchedTable">
+                {% if unmatched_data %}
+                <table id="customers" style="border:1px solid black;">
+                    <tr>
+                        <th>Guest Name</th>
+                        <th>Commission</th>
+                        <th>Rate AMT</th>
+                        <th>Percentage(10%)</th>
+                    </tr>
+                    {% for row in unmatched_data %}
+                    {% if row.is_matched %}
+                    <tr>
+                        <td>{{ row.guest_name }}</td>
+                        <td>Rs.{{ row.commission }}</td>
+                        <td>Rs.{{ row.rate_amd }}</td>
+                        <td>Rs.{{ row.difference }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td>{{ row.guest_name }}</td>
+                        <td colspan="3">Match Not Found</td>
+                    </tr>
+                    {% endif %}
+                    {% endfor %}
+                </table>
+                {% endif %}
+            </div>
+        </div>
     </div>
-    </div>
+
+    <script>
+        // Get the elements
+        const matchedLabel = document.getElementById('matched_label');
+        const unmatchedLabel = document.getElementById('unmatched_label');
+        const matchedDiv = document.getElementById('Matched_Div');
+        const unmatchedDiv = document.getElementById('Un_Matched_Div');
+        const matchedTable = document.getElementById('MatchedTable');
+        const unmatchedTable = document.getElementById('Un-MatchedTable');
+
+        // Function to toggle classes
+        function toggleButtonClasses(activeButton, inactiveButton) {
+            activeButton.classList.remove('btn-outline-success');
+            activeButton.classList.add('btn-success');
+
+            inactiveButton.classList.remove('btn-success');
+            inactiveButton.classList.add('btn-outline-success');
+        }
+
+        // Add event listeners for toggling
+        matchedLabel.addEventListener('click', () => {
+            matchedDiv.style.display = 'block';
+            unmatchedDiv.style.display = 'none';
+            matchedTable.style.display = 'block';
+            unmatchedTable.style.display = 'none';
+
+            toggleButtonClasses(matchedLabel, unmatchedLabel);
+        });
+
+        unmatchedLabel.addEventListener('click', () => {
+            matchedDiv.style.display = 'none';
+            unmatchedDiv.style.display = 'block';
+            matchedTable.style.display = 'none';
+            unmatchedTable.style.display = 'block';
+
+            toggleButtonClasses(unmatchedLabel, matchedLabel);
+        });
+
+    </script>
+
     <!-- Optional JavaScript -->
     <!-- jQuery first, then Popper.js, then Bootstrap JS -->
     <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js"
