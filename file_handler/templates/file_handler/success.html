@@ -70,7 +70,7 @@
 
             <div class="col-md-5" style="display: none;" id="Un_Matched_Div">
                 <div class="row">
-                    <div class="col-md-4" id="sac_filter">
+                    <div class="col-md-6" id="sac_filter">
                         <button class="btnGet btn btn-primary" type="button" value="">
                             Not Matched: {{um_total}}
                         </button>
@@ -116,9 +116,7 @@
                 <table id="customers" style="border:1px solid black;">
                     <tr>
                         <th>Guest Name</th>
-                        <th>Commission</th>
-                        <th>Rate AMT</th>
-                        <th>Percentage(10%)</th>
+                        <th colspan="3">Commission</th>
                     </tr>
                     {% for row in unmatched_data %}
                     {% if row.is_matched %}
