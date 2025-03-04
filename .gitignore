@@ -6,8 +6,6 @@
 **/migrations/*
 *.pyc
 *db.sqlite3
-*/uploads/*
-**/uploads/**
-**/uploads/
-**/**/uploads
-**/uploads/*
+*.xlsx
+*.zip
+

@@ -26,100 +26,6 @@ def delete_old_files():
             print(f"Error deleting file {file_path}: {e}")
 
 
-def compare_lists(request, list1, list2):
-    list1 = []
-    list2 = []
-
-
-def upload_file1(request):
-    """
-    Business Logic
-    """
-    try:
-        is_arr_matched = False
-        is_ven_matched = False
-        if request.method == 'POST':
-            form = UploadFileForm(request.POST, request.FILES)
-            if form.is_valid():
-                uploaded_file_instance = form.save()  # Save the file and get the instance
-                file_name = uploaded_file_instance.file.name  # Get the file name
-                filename2 = uploaded_file_instance.file2.name
-
-                # Read the Excel files
-                arr_file = pd.read_excel(file_name, sheet_name='Arrivals')
-                vendor_file = pd.read_excel(filename2)
-                arr_file_header = arr_file.columns.tolist()
-                vendor_file_header = vendor_file.columns.tolist()
-                vendor_modal_header = list(VendorTemplate.objects.values(
-                    'template_name', 'guest_name', 'is_merged', 'arr_date_name', 'dept_date_name', 'arr_dept_date_name', 'amount_name'))
-                arr_modal_header = list(ArrivalTemplate.objects.values(
-                    'name', 'is_merged', 'arr_date_name', 'dept_date_name', 'arr_dept_date_name', 'rate_amt_name_name'))
-
-                # Select the 'NAME' column and process names
-                selected_column = arr_file['NAME']
-                processed_names = []
-
-                # Define a pattern for junk titles (e.g., Mr., Mrs., etc.)
-                junk_titles_pattern = r'\b(Mr|Mrs|Ms|Dr|Prof)\.?\b|\*'
-
-                # Clear previous data
-                ProcessedData.objects.all().delete()
-
-                for index, name in enumerate(selected_column):
-                    # Clean up the name
-                    cleaned_name = re.sub(
-                        junk_titles_pattern, '', name, flags=re.IGNORECASE)
-                    # Replace commas with spaces
-                    cleaned_name = re.sub(r',', ' ', cleaned_name)
-                    cleaned_name = re.sub(
-                        r'\.', '', cleaned_name)  # Remove periods
-
-                    # Split, reverse the first two words if possible, and rejoin
-                    words = cleaned_name.strip().split()
-                    if len(words) >= 2:
-                        words[0], words[1] = words[1], words[0]
-                    reversed_name = " ".join(words)
-
-                    # Add the processed name to the list
-                    processed_names.append(reversed_name)
-
-                    # Search for the processed name in the second DataFrame (vendor_file)
-                    matched_row = vendor_file[vendor_file['Guest Name']
-                                              == reversed_name]
-
-                    # Get the rate_amt from arr_file if available
-                    rate_amt = arr_file.at[index,
-                                           'RATE_AMT'] if 'RATE_AMT' in arr_file.columns else 0
-
-                    if not matched_row.empty:
-                        commission = matched_row['Total Invoice Value'].values[0]
-                        rate_amd = rate_amt  # Add rate_amt to rate_amd
-                        # Example calculation (adjust if needed)
-                        difference = commission - rate_amt
-                        is_matched_data = True
-                    else:
-                        commission = 0
-                        rate_amd = rate_amt  # Set rate_amt if no match is found
-                        difference = 0
-                        is_matched_data = False
-
-                    # Save processed data into the database
-                    ProcessedData.objects.create(
-                        guest_name=reversed_name,
-                        commission=commission,
-                        rate_amd=rate_amd,
-                        difference=difference,
-                        is_matched=is_matched_data
-                    )
-
-                return redirect('success')  # Redirect after successful upload
-        else:
-            form = UploadFileForm()
-        return render(request, 'file_handler/upload.html', {'form': form})
-    except Exception as e:
-        return HttpResponse(f"An error occurred: {str(e)}")
-
-
 def upload_file(request):
     """
     Business Logic
@@ -140,8 +46,8 @@ def upload_file(request):
                 file_name2 = os.path.join(settings.MEDIA_ROOT, uploaded_file_instance.file2.name)
 
                 # Read the Excel files
-                arr_file = pd.read_excel(file_name, sheet_name='Arrivals')
-                vendor_file = pd.read_excel(file_name2)
+                arr_file = pd.read_excel(file_name2, sheet_name='Arrivals')
+                vendor_file = pd.read_excel(file_name)
                 arr_file_header = arr_file.columns.tolist()
                 vendor_file_header = vendor_file.columns.tolist()
 
@@ -162,7 +68,9 @@ def upload_file(request):
                 vendor_modal_headers = [list(item.values()) for item in vendor_modal_queryset]
                 arr_subsets = [sublist for sublist in arr_modal_headers if set(sublist).issubset(set(arr_file_header))]
                 ven_subsets = [sublist for sublist in vendor_modal_headers if set(sublist).issubset(set(vendor_file_header))]
-
+                print('arr_subsets',arr_subsets)
+                print('ven_subsets',ven_subsets)
+                # return
                 # Output results
                 if ven_subsets:
                     ven_matched = []
@@ -188,48 +96,67 @@ def upload_file(request):
                     return render(request, 'file_handler/upload.html', {'form': form})
 
                 # Proceed with processing only if headers matched
-                selected_column = arr_file[arr_matched[0][0]]
+                # Proceed with processing only if headers matched
+                selected_column = vendor_file[ven_matched[0][0]]
+                print('selected_column', selected_column)
+
                 processed_names = []
 
                 # Define a pattern for junk titles (e.g., Mr., Mrs., etc.)
-                junk_titles_pattern = r'\b(Mr|Mrs|Ms|Dr|Prof)\.?\b|\*'
+                junk_titles_pattern = r'\b(Mr|Mrs|Ms|Dr|Prof|⁰)\.?\b|\*'
 
                 # Clear previous data
                 ProcessedData.objects.all().delete()
 
                 for index, name in enumerate(selected_column):
+                    # Ensure 'name' is a string before processing
+                    name = str(name).strip() if pd.notna(name) else ""
+
+                    if not name:  # Skip empty guest names
+                        continue
+
                     # Clean up the name
-                    cleaned_name = re.sub(
-                        junk_titles_pattern, '', name, flags=re.IGNORECASE)
-                    # Replace commas with spaces
-                    cleaned_name = re.sub(r',', ' ', cleaned_name)
-                    cleaned_name = re.sub(
-                        r'\.', '', cleaned_name)  # Remove periods
+                    cleaned_name = re.sub(junk_titles_pattern, '', name, flags=re.IGNORECASE)
+                    cleaned_name = re.sub(r',', ' ', cleaned_name)  # Replace commas with spaces
+                    cleaned_name = re.sub(r'\.', '', cleaned_name)  # Remove periods
 
                     # Split, reverse the first two words if possible, and rejoin
                     words = cleaned_name.strip().split()
                     if len(words) >= 2:
                         words[0], words[1] = words[1], words[0]
-                    reversed_name = " ".join(words)
+                    reversed_name = " ".join(words).strip()
 
                     # Add the processed name to the list
                     processed_names.append(reversed_name)
 
-                    # Search for the processed name in the second DataFrame (vendor_file)
-                    matched_row = vendor_file[vendor_file[ven_matched[0][0]]
-                                              == reversed_name]
+                    # Search for the processed name in the second DataFrame (arr_file)
+                    arr_file[arr_matched[0][0]] = arr_file[arr_matched[0][0]].fillna('').astype(str).str.lower().str.strip()
+                    reversed_name = reversed_name.lower().strip()
 
-                    # Get the rate_amt from arr_file if available
-                    rate_amt = arr_file.at[index,
-                                            arr_matched[0][3]] if arr_matched[0][3] in arr_file.columns else 0
+                    # Normalize name for fuzzy matching
+                    def normalize_name(name):
+                        name = re.sub(r'[^\w\s]', '', name)  # Remove special characters
+                        name = re.sub(r'\s+', ' ', name).strip()  # Remove extra spaces
+                        name_words = name.lower().split()
+                        return sorted(name_words)  # Sort words alphabetically for flexible matching
+                    
+                    if not reversed_name:  # Ensure non-empty reversed name
+                        continue
+
+
+                    reversed_normalized = normalize_name(reversed_name)
+
+                    matched_row = arr_file[
+                        arr_file[arr_matched[0][0]].apply(lambda x: all(word in x.lower() for word in reversed_normalized))
+                    ]
+
+                    # Get the rate_amt from vendor_file if available
+                    rate_amt = vendor_file.at[index, ven_matched[0][3]] if ven_matched[0][3] in vendor_file.columns else 0
                     rate_amt_difference = rate_amt * 0.10
-                    # print(rate_amt)
-                    # return
-                    # print('here')
+
                     if not matched_row.empty:
-                        commission = matched_row[ven_matched[0][-1]].values[0]
+                        commission = matched_row[arr_matched[0][-1]].values[0]
                         rate_amd = rate_amt  # Add rate_amt to rate_amd
-                        # Example calculation (adjust if needed)
                         difference = rate_amt_difference
                         is_matched_data = True
                     else:
@@ -237,7 +164,7 @@ def upload_file(request):
                         rate_amd = rate_amt  # Set rate_amt if no match is found
                         difference = 0
                         is_matched_data = False
-                    # return
+
                     # Save processed data into the database
                     ProcessedData.objects.create(
                         guest_name=reversed_name,
@@ -248,12 +175,12 @@ def upload_file(request):
                     )
 
                 return redirect('success')  # Redirect after successful upload
+
         else:
             form = UploadFileForm()
         return render(request, 'file_handler/upload.html', {'form': form})
     except Exception as e:
         return HttpResponse(f"An error occurred: {str(e)}")
-
 
 def success(request):
     """
